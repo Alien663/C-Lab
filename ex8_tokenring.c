@@ -26,12 +26,9 @@ int main(int argc,  char *argv[ ]) {
    }
 
    cw_in = cw[0];
+   cw_out = cw[1];
+   acw_in = acw[0];
    acw_out = acw[1];
-
-   if ((close(cw[1]) == -1) || (close(acw[0]) == -1)) {
-      perror("Failed to close extra descriptors");
-      return 1; 
-   }   
 
    /* create the remaining processes */
    for (i = 1; i < nprocs;  i++) {
@@ -86,6 +83,7 @@ int main(int argc,  char *argv[ ]) {
             }
             else if (ch == 'p')
             {
+               token = 1; // token
                write(acw_out, &token, sizeof(token));
             }
             else if (ch == 'f'){
@@ -100,7 +98,7 @@ int main(int argc,  char *argv[ ]) {
          // CW pipe 有資料
          int a, b;
          if (read(cw_in, &a, sizeof(a)) > 0 && read(cw_in, &b, sizeof(b)) > 0) {
-            printf("I am %ld, got : %d %d\n", (long)getpid(), a, b);
+            printf("I am P%d %ld, got : %d %d\n", i, (long)getpid(), a, b);
             // 計算下一步
             if(!is_root){
                int sum = a + b;
@@ -121,9 +119,9 @@ int main(int argc,  char *argv[ ]) {
             }
             else{
                if(is_root)
-                  printf("I'm %ld, the root\n", (long)getpid());
+                  printf("I'm P%d %ld, the root\n", i, (long)getpid());
                else{
-                  printf("I'm %ld\n", (long)getpid());
+                  printf("I'm P%d %ld\n", i, (long)getpid());
                   write(acw_out, &token, sizeof(token)); // 繼續傳
                }
             }
