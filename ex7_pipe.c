@@ -65,12 +65,17 @@ newborn:
     }
 
     pid_t pid = getpid(), ppid = getppid();
-    fprintf(stderr, "I'm %c, the %d generation, my pid=%ld, and my ppid=%ld\n", label, generation, pid, ppid);
+    fprintf(stderr, "I'm %c, the %d generation, my pid=%ld, and my ppid=%ld\n", label, generation, (long)pid, (long)ppid);
 
     char ch[80], ack[80];
     while(1){
-        if(generation == 0) fgets(ch, 80, stdin);
-        else read(parent_pipe[0], ch, sizeof(ch));
+        if(generation == 0) {
+            ssize_t n = read(STDIN_FILENO, ch, sizeof(ch) - 1);
+            if(n <= 0) break;
+            ch[n] = '\0';
+        } else {
+            read(parent_pipe[0], ch, sizeof(ch));
+        }
 
         if(ch[0] == label) strcpy(ch, "POST\0");
 
@@ -80,7 +85,7 @@ newborn:
         }
 
         if(strcmp(ch, "POST") == 0){
-            fprintf(stderr, "I'm %c, the %d generation, my pid=%ld, and my ppid=%ld\n", label, generation, pid, ppid);
+            fprintf(stderr, "I'm %c, the %d generation, my pid=%ld, and my ppid=%ld\n", label, generation, (long)pid, (long)ppid);
         }
 
         if(generation > 0) write(parent_pipe[1], "ack", 3);

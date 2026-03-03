@@ -4,31 +4,44 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-void main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     if(argc > 1){
-        int Flag = 1;
-        for(int i=1;i<argc;i++){
-            // get the input from argv
-            int the_input = atoi(argv[i]);
-            int j=0;
-            pid_t cid;
+        int forkFlag = 1;
 
+        for(int i=1;i<argc && forkFlag;i++){
+            int count = atoi(argv[i]);
+            if(count <= 0) break;
 
-            // start to make fork tree
-            if(Flag){
-                Flag = 0;
-                for(;j<the_input;j++){
-                    cid = fork();
-                    if(cid == 0) break;
-                    else {
-                        i = argc;// let parent don't fork grant child
-                        wait(NULL);
-                    }
+            int is_child = 0;
+            for(int j=0;j<count;j++){
+                pid_t cid = fork();
+                if(cid < 0){
+                    perror("fork error");
+                    exit(1);
+                }
+                if(cid == 0) {
+                    forkFlag = (j == 0); // Only the first child will fork next generation
+                    is_child = 1;
+                    break;
                 }
             }
-            if(j==0) Flag = 1; // setting the left leaf flag
+
+            // Parent stops forking
+            if(!is_child){
+                forkFlag = 0;
+            }
         }
     }
-    while(wait(NULL)!=-1);
+
+    for (;;) {
+        if (wait(NULL) == -1) {
+            if (errno == EINTR) {
+                continue;
+            }
+            break;
+        }
+    }
+
     printf("I'm %d, my parent is %d\n", getpid(), getppid());
+    return 0;
 }
